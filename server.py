@@ -56,6 +56,13 @@ def return_from_list(i):
             return_items_list.append(user)
             
     return(return_items_list)
+
+def check_username(user): # A vérifer quand il y aura plusieurs clients
+    for username in return_from_list(0):
+        if username == user:
+            return("003")
+    
+    return("004")
             
     
 
@@ -69,9 +76,12 @@ def main(): # fonction principale du programme
     username = recv_text(conn)
     (ip,port) = ip_and_port(conn)
 
+    code = check_username(username)
+    send_text(conn,code)
+
     add_to_list(username,(ip,port))
 
-    return_from_list(0)
+
     
 
 
