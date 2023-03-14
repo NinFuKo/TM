@@ -23,7 +23,7 @@ def wait_connection():
     while True:
         socket.listen()
         conn, address = socket.accept()
-        print("Client connecté")
+        print("Client connected")
         return(conn)
     
 def ip_and_port(conn):
@@ -39,14 +39,25 @@ def ip_and_port(conn):
     return((ip,port))
 
 def add_to_list(username,ip_and_port):
-    with open("username_ip.txt","a") as liste:
-        liste.write(username + " " + ip_and_port[0] + " " + ip_and_port[1])
+    with open("username_ip.txt","a") as users_list:
+        users_list.write(username + " " + ip_and_port[0] + " " + ip_and_port[1])
     print(username + " / " + ip_and_port[0] + " / " + ip_and_port[1] + " has been added to the list.")
 
 def reset_list():
-    with open("username_ip.txt","w") as liste:
-        liste.write("")
+    with open("username_ip.txt","w") as users_list:
+        users_list.write("")
     print("The list has been resetted")
+
+def return_from_list(i):
+    return_items_list = []
+    with open("username_ip.txt","r") as users_list:
+        for user in users_list:
+            user = user.split(" ") [i]
+            return_items_list.append(user)
+            
+    return(return_items_list)
+            
+    
 
 def main(): # fonction principale du programme
     reset_list()
@@ -59,6 +70,9 @@ def main(): # fonction principale du programme
     (ip,port) = ip_and_port(conn)
 
     add_to_list(username,(ip,port))
+
+    return_from_list(0)
+    
 
 
     
