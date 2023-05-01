@@ -1,26 +1,73 @@
+# importation de modules
+
 import socket
 import threading
 import time
 
-def send_text(conn,text): # permet d'envoyer des données
+# variables globales
+
+code_dictionary = {"001":"Valid username","002":"Invalid username","003":"Want to talk","004":"Quit","005":"No one is up","006":"Second person is ready"}
+
+sending = []
+
+# fonctions de communications
+
+def send_text(conn,text,id): # permet d'envoyer des données
     text_encoded = text.encode("utf-8")
     conn.sendall(text_encoded)
-    print("Server send : ",text)
+    if text[0] == "0" :
+        print("Console",id,": Server send :",text,"(",code_dictionary[text],")")
+    else:
+        print("Console",id,": Server send :",text)
+
 
 def recv_text(conn,id): # permet d'attendre de recevoir des données
     while True:
         text = conn.recv(1024) # taille du buffer encore à voir
         text = text.decode("utf-8")
-        print("Client",id,"send : ",text)
+        if text[0] == "0" :
+            print("Console",id,": Client",id,"send :",text,"(",code_dictionary[text],")")
+        else:
+            print("Console",id,": Client",id,"send :",text)
+
         if text != "" or text != " ":
             return text
 
+# fonctions secondaires
 
 def reset_list(): # Cette fonction remet à zero la liste des utilisateurs
     with open("username_ip.txt","w") as users_list:
         users_list.write("")
 
-    print("The list has been resetted")
+    print("Console : The list has been resetted")
+
+
+def initialisation(port_num): # Initialise le serveur sur un port
+    global socket
+    host, port = ("", port_num)
+    socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    socket.bind((host,port))
+    print("Console : Server is up on port",port_num,"!")
+
+
+def wait_connection(id): # Attends une connection
+    while True:
+        socket.listen()
+        conn, addr = socket.accept()
+        print("Console : Client",id,"connected !")
+        thread_with_client = threading.Thread(target=connection_with_client,args=(conn,id))
+
+        thread_with_client.start()
+        return()
+
+
+def ip_and_port(conn,id): # retourne l'ip et le port
+    ip,port = conn.getpeername()
+    print("Console",0,": Client",str(id),":",str(ip),":",str(port))
+    ip_str = str(ip)
+    port_str = str(port)
+    return((ip_str,port_str))
+
 
 def return_from_list(i):
     return_items_list = []
@@ -35,40 +82,25 @@ def check_username(user): # A vérifer quand il y aura plusieurs clients
     for username in return_from_list(0):
         if username.lower() == user.lower():
             print("Invalid Username")
-            return("003") # code = 003 : code d'erreur
+            return("002") # code = 002 : code d'erreur du nom d'utilisateur
     
-    return("004") # code = 004 : nom d'utilisateur valide
+    return("001") # code = 001 : nom d'utilisateur valide
 
 
-
-def ip_and_port(conn,id): # retourne l'ip et le port
-    conn_str = str(conn)
-    l = conn_str.find("raddr")
-    conn_str = conn_str[l:]
-    l = conn_str.find("'")
-    k = conn_str.rfind("'")
-    ip = conn_str[l+1:k]
-    l = conn_str.find(",")
-    k = conn_str.rfind(")")
-    port = conn_str[l+1:k].strip()
-    print("Client",id,":",ip,":",port)
-    return((ip,port))
-
-def add_to_list(username,ip_and_port):
+def add_to_list(username,ip_and_port,id):
     with open("username_ip.txt","a") as users_list:
         users_list.write(username + " " + ip_and_port[0] + " " + ip_and_port[1] + "\n")
-    print("\n",username + " / " + ip_and_port[0] + " / " + ip_and_port[1] + " has been added to the list.\n")
+    print("Console",id,":",username + " / " + ip_and_port[0] + " / " + ip_and_port[1] + " has been added to the list.\n")
 
 
-
-
-def initialisation(port_num): # Initialise le serveur sur un port
-    global socket
-    host, port = ("", port_num)
-    socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    socket.bind((host,port))
-    print("Server is up on port",port_num,"!")
-
+def menu(conn,id):
+    while True:
+        print("Console",id,": Waiting in menu")
+        code = recv_text(conn,id)
+        if code == "004":
+            return "004"
+        elif code == "003":
+            return "003"
 
 
 def persons_ready(username): # Retourne la liste des gens prêts
@@ -82,51 +114,64 @@ def persons_ready(username): # Retourne la liste des gens prêts
 
 
 
-def wait_connection(id): # Attends une connection
-    while True:
-        socket.listen()
-        conn, addr = socket.accept()
-        print("Client",id,"connected !")
-        thread_with_client = threading.Thread(target=connection_with_client,args=(conn,id))
 
-        thread_with_client.start()
-        return()
-
-
-
+# Fonction executé en thread
 
 def connection_with_client(conn,id): # communication avec client
-    print("Thread with client",id,"started")
-    code = recv_text(conn,id)
-    if code == "001": send_text(conn, "002")
+    global sending
+
+    print("Console", id , ": Thread with client",id,"started")
     
     (ip,port) = ip_and_port(conn,id)
 
     while True:
         username = recv_text(conn,id)
         code = check_username(username)
-        send_text(conn,code)
-        if code == "004": break
+        send_text(conn,code,id)
+        if code == "001": break
 
     
-    add_to_list(username,(ip,port))
+    add_to_list(username,(ip,port),id)
+
+    
+
+    if menu(conn,id) == "004": return
 
     while True:
-        print("---")
-        response = ""
-        send_text(conn,persons_ready(username))
-        response = recv_text(conn,id)
-        if response == "005":
-            time.sleep(5)
+        list_of_ready = persons_ready(username)
+        send_text(conn,list_of_ready,id)
+        choose = recv_text(conn,id)
+        if choose == "005": time.sleep(5)
         else:
-            print(response)
+            person_choosen = choose
             
+            for user in sending:
+                i = -1
+                if choose == user:
+                    if sending[i] == username:
+                        print(choose,"and", username,"want to talk")
+                        send_text(conn,"006",id) 
+                        break
+                    else:
+                        print("---")
+                i += 1
+
+            sending.append(username)
+            sending.append(choose)
+            print(sending)
+
+
+
+ 
     
 
 
 
 
-def main(): # fonction principale
+
+# fonction principale
+
+def main(): # première fonction executé
     id_count = 0
 
     reset_list()
@@ -135,5 +180,7 @@ def main(): # fonction principale
         wait_connection(id_count)
         id_count += 1
 
+
+########
 
 main()

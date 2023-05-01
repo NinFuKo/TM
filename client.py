@@ -17,8 +17,10 @@ def recv_text(conn):
     while True:
         data = conn.recv(1024) # recevoir les données de la connexion
         data = data.decode("utf-8")
-        print("Server send : ",data)
-        return(data)
+        if data == "": return
+        else:
+            print("Server send :",data)
+            return(data)
      
 def choose_username(conn):
     username = input("Choose a username : ")
@@ -27,27 +29,21 @@ def choose_username(conn):
 def choose_persons_ready(conn):
     import time
     while True:
-        print("---")
-        persons_ready = recv_text(conn) 
+        print("-/-")
+        persons_ready = recv_text(conn)
 
-        k = persons_ready.find(":")
-        persons_ready = persons_ready[k+1:]
-        list_persons = persons_ready.split(" ")
-
-
-        print("Choose with who you want to talk") # manque d'un système de page
-        if list_persons[0] == "":
-            send_text(conn,"005")
-        else:
-            for user in list_persons[:len(list_persons)-1]:   
-                print("-",user)
-            
-            wanted = input("")
-            for user in list_persons:
-                if user.lower() == wanted.lower():
-                    send_text(conn,user)
+        print(persons_ready)
         
-        
+
+def menu():
+    while True:
+        print("1. Ask for ready persons")
+        print("2. Quit")
+        choice = input()
+        if choice == "1":
+            return "003"
+        if choice == "2":
+            return "004"
 
     
     
@@ -56,22 +52,45 @@ def main():
     while True:
         try:
             conn = initialisation_et_connexion()
-            send_text(conn,"001") # code 001 = ping server
-            code = recv_text(conn) # code 002 = server is up / username is requested
-            if code == "002":
-                while True:
-                    choose_username(conn)
+            while True:
+                choose_username(conn)
 
-                    code = recv_text(conn)
-                    if code == "003":
-                        print("Invalid username")
-                    if code == "004":
-                        print("Valid Username")
-                        break
+                code = recv_text(conn)
+                if code == "002":
+                    print("Invalid username")
+                if code == "001":
+                    print("Valid Username")
+                    break
             
             
-            choose_persons_ready(conn)
-                    
+            choice = menu()
+            if choice == "003":
+                send_text(conn,"003")
+            elif choice == "004":
+                send_text(conn,"004") 
+                return # Permet de quitter
+
+            while True:
+                list_of_ready = recv_text(conn)
+                if list_of_ready != None:
+
+                    k = list_of_ready.find(":")
+                    list_of_ready = list_of_ready[k+1:]
+                    list_of_ready = list_of_ready.split(" ")
+                    if list_of_ready[0] == "":
+                        send_text(conn,"005")
+                    else:
+                        print("Choose with who you want to talk")
+                        for user in list_of_ready:   
+                            if user != "" :
+                                print("-",user)
+
+                        while True:
+                            wanted = input("")
+                            for user in list_of_ready:
+                                if user.lower() == wanted.lower():
+                                    send_text(conn,user)
+                            
 
                 
         except ConnectionRefusedError:
@@ -79,8 +98,5 @@ def main():
 
         finally:
             conn.close()
-            quit = input("Quit ? y/n\n")
-            if quit.lower() != "n":
-                break
 
 main()
