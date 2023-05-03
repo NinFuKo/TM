@@ -90,6 +90,11 @@ def main():
                             for user in list_of_ready:
                                 if user.lower() == wanted.lower():
                                     send_text(conn,user)
+                                    code = recv_text(conn)
+                                    if code == "006": break
+                if code == "006":break
+
+            recv_text(conn)
                             
 
                 

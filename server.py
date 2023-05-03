@@ -25,6 +25,8 @@ def recv_text(conn,id): # permet d'attendre de recevoir des données
     while True:
         text = conn.recv(1024) # taille du buffer encore à voir
         text = text.decode("utf-8")
+        if not text:
+            return
         if text[0] == "0" :
             print("Console",id,": Client",id,"send :",text,"(",code_dictionary[text],")")
         else:
@@ -113,7 +115,12 @@ def persons_ready(username): # Retourne la liste des gens prêts
     return(in_list)
 
 
-
+def return_someone(user):
+    with open("username_ip.txt","r") as users_list:
+        for line in users_list:
+            if user == line.split()[0]:
+                return line
+    
 
 # Fonction executé en thread
 
@@ -144,34 +151,27 @@ def connection_with_client(conn,id): # communication avec client
         if choose == "005": time.sleep(5)
         else:
             person_choosen = choose
-            
-            for user in sending:
-                i = -1
-                if choose == user:
-                    if sending[i] == username:
-                        print(choose,"and", username,"want to talk")
-                        send_text(conn,"006",id) 
-                        break
-                    else:
-                        print("---")
-                i += 1
-
             sending.append(username)
-            sending.append(choose)
+            sending.append(person_choosen)
             print(sending)
 
+            while True:
+                ready_to_chat = False
+                for i in range(0, len(sending), 2):
+                    if sending[i+1] == username and sending[i] == person_choosen:
+                        ready_to_chat = True
+                        break
+                if ready_to_chat:
+                    send_text(conn, "006", id)
+                    break
+                else:
+                    time.sleep(1)
 
+            time.sleep(1)
+            ip_of_choosen = return_someone(person_choosen)
+            send_text(conn,ip_of_choosen,id)
 
- 
-    
-
-
-
-
-
-# fonction principale
-
-def main(): # première fonction executé
+def main():
     id_count = 0
 
     reset_list()
@@ -181,6 +181,8 @@ def main(): # première fonction executé
         id_count += 1
 
 
-########
+#####
 
 main()
+
+# le serveur envoie ip_of_choosen mais le client ne le recoit pas
