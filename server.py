@@ -171,6 +171,7 @@ def connection_with_client(conn,id): # communication avec client
             ip_of_choosen = return_someone(person_choosen)
             send_text(conn,ip_of_choosen,id)
             if recv_text(conn,id) == "007":
+                print("Thread",id,": finished")
                 return
 
 def main():
@@ -186,5 +187,3 @@ def main():
 #####
 
 main()
-
-# le serveur envoie ip_of_choosen mais le client ne le recoit pas

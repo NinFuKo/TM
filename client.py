@@ -1,8 +1,8 @@
 import socket
 
-def initialisation_et_connexion():
+def initialisation_et_connexion(host,port):
     global socket
-    host, port = ("localhost", 5566)
+    host, port = (host,port)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host,port))
     print("Connected")
@@ -46,14 +46,17 @@ def menu():
             return "004"
 
 def main_second_part(conn):
-    print(recv_text(conn))
+    other_client = recv_text(conn)
+    send_text(conn,"007")
+
+    conn.close()
 
     
         
 def main():
 
     try:
-        conn = initialisation_et_connexion()
+        conn = initialisation_et_connexion("localhost",5566)
         while True:
             choose_username(conn)
 
@@ -107,3 +110,5 @@ def main():
         conn.close()
 
 main()
+
+# blocage sur la connexion entre les deux clients
