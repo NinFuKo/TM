@@ -6,7 +6,7 @@ import time
 
 # variables globales
 
-code_dictionary = {"001":"Valid username","002":"Invalid username","003":"Want to talk","004":"Quit","005":"No one is up","006":"Second person is ready"}
+code_dictionary = {"001":"Valid username","002":"Invalid username","003":"Want to talk","004":"Quit","005":"No one is up","006":"Second person is ready","007":"Client has received the other ip"}
 
 sending = []
 
@@ -170,6 +170,8 @@ def connection_with_client(conn,id): # communication avec client
             time.sleep(1)
             ip_of_choosen = return_someone(person_choosen)
             send_text(conn,ip_of_choosen,id)
+            if recv_text(conn,id) == "007":
+                return
 
 def main():
     id_count = 0

@@ -45,63 +45,65 @@ def menu():
         if choice == "2":
             return "004"
 
-    
+def main_second_part(conn):
+    print(recv_text(conn))
+
     
         
 def main():
-    while True:
-        try:
-            conn = initialisation_et_connexion()
-            while True:
-                choose_username(conn)
 
-                code = recv_text(conn)
-                if code == "002":
-                    print("Invalid username")
-                if code == "001":
-                    print("Valid Username")
-                    break
+    try:
+        conn = initialisation_et_connexion()
+        while True:
+            choose_username(conn)
+
+            code = recv_text(conn)
+            if code == "002":
+                print("Invalid username")
+            if code == "001":
+                print("Valid Username")
+                break
+        
+        
+        choice = menu()
+        if choice == "003":
+            send_text(conn,"003")
+        elif choice == "004":
+            send_text(conn,"004") 
+            return # Permet de quitter
+
+        while True:
+            list_of_ready = recv_text(conn)
+            if list_of_ready != None:
+
+                k = list_of_ready.find(":")
+                list_of_ready = list_of_ready[k+1:]
+                list_of_ready = list_of_ready.split(" ")
+                if list_of_ready[0] == "":
+                    send_text(conn,"005")
+                else:
+                    print("Choose with who you want to talk")
+                    for user in list_of_ready:   
+                        if user != "" :
+                            print("-",user)
+
+                    while True:
+                        wanted = input("")
+                        for user in list_of_ready:
+                            if user.lower() == wanted.lower():
+                                send_text(conn,user)
+                                code = recv_text(conn)
+                                main_second_part(conn) # lance la suite du programme
+                                return
+
+        
+                        
+
             
-            
-            choice = menu()
-            if choice == "003":
-                send_text(conn,"003")
-            elif choice == "004":
-                send_text(conn,"004") 
-                return # Permet de quitter
+    except ConnectionRefusedError:
+        print("Error")
 
-            while True:
-                list_of_ready = recv_text(conn)
-                if list_of_ready != None:
-
-                    k = list_of_ready.find(":")
-                    list_of_ready = list_of_ready[k+1:]
-                    list_of_ready = list_of_ready.split(" ")
-                    if list_of_ready[0] == "":
-                        send_text(conn,"005")
-                    else:
-                        print("Choose with who you want to talk")
-                        for user in list_of_ready:   
-                            if user != "" :
-                                print("-",user)
-
-                        while True:
-                            wanted = input("")
-                            for user in list_of_ready:
-                                if user.lower() == wanted.lower():
-                                    send_text(conn,user)
-                                    code = recv_text(conn)
-                                    if code == "006": break
-                if code == "006":break
-
-            recv_text(conn)
-                            
-
-                
-        except ConnectionRefusedError:
-            print("Error")
-
-        finally:
-            conn.close()
+    finally:
+        conn.close()
 
 main()
