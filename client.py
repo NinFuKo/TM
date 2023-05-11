@@ -1,4 +1,5 @@
 import socket
+import time
 
 def initialisation_et_connexion(host,port):
     global socket
@@ -44,12 +45,43 @@ def menu():
             return "003"
         if choice == "2":
             return "004"
+        
+def initialisation(port_num): # Initialise le client host sur un port
+    global socket
+    host, port = ("", port_num)
+    socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    socket.bind((host,port))
+    print("Client : Host is up on port",port_num,"!")
 
-def main_second_part(conn):
+def wait_connection(): # Attends une connection
+    while True:
+        socket.listen()
+        conn_c, addr = socket.accept()
+        print("Console : Someone is connected !")
+        return(conn_c)
+
+
+def main_second_part_host(conn): # 006
     other_client = recv_text(conn)
-    send_text(conn,"007")
-
+    send_text(conn,"008")
     conn.close()
+    initialisation(5567)
+    conn_c = wait_connection()
+
+
+
+def main_second_part_normal(conn): # 007
+    other_client = recv_text(conn)
+    client_ip= other_client.split(" ")[1]
+    client_port= other_client.split(" ")[2]
+    client_port = int(client_port)
+    send_text(conn,"008")
+    conn.close()
+    time.sleep(3)
+    print("--")
+
+    
+
 
     
         
@@ -96,8 +128,11 @@ def main():
                             if user.lower() == wanted.lower():
                                 send_text(conn,user)
                                 code = recv_text(conn)
-                                main_second_part(conn) # lance la suite du programme
-                                return
+                                if code == "006":
+                                    main_second_part_host(conn) # lance la suite du programme
+                                    return
+                                elif code == "007":
+                                    main_second_part_normal(conn)
 
         
                         

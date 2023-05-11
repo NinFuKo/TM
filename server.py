@@ -6,7 +6,7 @@ import time
 
 # variables globales
 
-code_dictionary = {"001":"Valid username","002":"Invalid username","003":"Want to talk","004":"Quit","005":"No one is up","006":"Second person is ready","007":"Client has received the other ip"}
+code_dictionary = {"001":"Valid username","002":"Invalid username","003":"Want to talk","004":"Quit","005":"No one is up","006":"Second person is ready (client host)","007":"Second person is ready (client)","008":"Client has received the other ip"}
 
 sending = []
 
@@ -153,16 +153,23 @@ def connection_with_client(conn,id): # communication avec client
             person_choosen = choose
             sending.append(username)
             sending.append(person_choosen)
+            sending.append(id)
             print(sending)
 
             while True:
+                is_server = False
                 ready_to_chat = False
-                for i in range(0, len(sending), 2):
+                for i in range(0, len(sending), 3):
                     if sending[i+1] == username and sending[i] == person_choosen:
                         ready_to_chat = True
+                        if sending[i+2] > id:
+                            is_server = True
                         break
-                if ready_to_chat:
+                if ready_to_chat and is_server:
                     send_text(conn, "006", id)
+                    break
+                elif ready_to_chat:
+                    send_text(conn,"007",id)
                     break
                 else:
                     time.sleep(1)
@@ -170,7 +177,7 @@ def connection_with_client(conn,id): # communication avec client
             time.sleep(1)
             ip_of_choosen = return_someone(person_choosen)
             send_text(conn,ip_of_choosen,id)
-            if recv_text(conn,id) == "007":
+            if recv_text(conn,id) == "008":
                 print("Thread",id,": finished")
                 return
 
