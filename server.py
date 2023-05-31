@@ -3,6 +3,7 @@
 import socket
 import threading
 import time
+import keyboard
 
 # variables globales
 
@@ -11,6 +12,16 @@ code_dictionary = {"001":"Valid username","002":"Invalid username","003":"Want t
 sending = []
 
 # fonctions de communications
+
+
+
+
+# Fonction qui gère l'arrêt du programme
+def on_key_press(event):
+    if event.name == 'q':
+        print('Vous avez appuyé sur la touche "q"!')
+        keyboard.unhook_all()  # Pour empêcher les rappels ultérieurs
+        exit()
 
 def send_text(conn,text,id): # permet d'envoyer des données
     text_encoded = text.encode("utf-8")

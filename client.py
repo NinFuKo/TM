@@ -1,6 +1,25 @@
 import socket
 import time
 
+"""
+# Fonction qui gère l'arrêt du programme
+def on_key_press(event):
+    if event.name == 'q':
+        print('Vous avez appuyé sur la touche "q"!')
+        keyboard.unhook_all()  # Pour empêcher les rappels ultérieurs
+        exit()
+
+# Associe la fonction on_key_press à l'appui de la touche "q"
+keyboard.on_press(on_key_press)
+"""
+
+def is_port_open(port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    result = sock.connect_ex(('localhost', port))
+    sock.close()
+    return result == 0
+
+
 def initialisation_et_connexion(host,port):
     global socket
     host, port = (host,port)
@@ -61,11 +80,11 @@ def wait_connection(): # Attends une connection
         return(conn_c)
 
 
-def main_second_part_host(conn): # 006
+def main_second_part_host(conn,port): # 006  
     other_client = recv_text(conn)
     send_text(conn,"008")
     conn.close()
-    initialisation(5567)
+    initialisation(port)
     conn_c = wait_connection()
 
 
@@ -79,6 +98,7 @@ def main_second_part_normal(conn): # 007
     conn.close()
     time.sleep(3)
     print("--")
+    initialisation_et_connexion(client_ip,client_port)
 
     
 
@@ -129,8 +149,13 @@ def main():
                                 send_text(conn,user)
                                 code = recv_text(conn)
                                 if code == "006":
-                                    main_second_part_host(conn) # lance la suite du programme
-                                    return
+                                    _, port = conn.getsockname()
+
+                                        
+                                    main_second_part_host(conn,port)
+                                    return # lance la suite du programme
+
+                                    
                                 elif code == "007":
                                     main_second_part_normal(conn)
 
