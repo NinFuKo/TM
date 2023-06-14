@@ -3,87 +3,78 @@
 import socket # module qui permet d'ouvrir ou de se connecter sur un adresse ip
 import threading # module pour executer plusieurs fonctions en même temps
 import time  # permet de mettre en pause le programme
-#import keyboard # permet de détecter les touches appuyées
 
 # variables globales
 
-code_dictionary = {"001":"Valid username","002":"Invalid username","003":"Want to talk","004":"Quit","005":"No one is up","006":"Second person is ready (client host)","007":"Second person is ready (client)","008":"Client has received the other ip"}
+# liste des codes (protocole) pour communiquer plus facilement entre le serveur et le client
+code_dictionary = {"001":"Valid username","002":"Invalid username","003":"Want to talk","004":"Quit","005":"No one is up","006":"Second person is ready (client : host)","007":"Second person is ready (client : client)","008":"Client has received the other ip"}
 
+# liste qui sert à mettre le nom d'utilisateur, la personne choisie et l'id du thread pour chaque utilisateur ayant fait un choix de destinataire
+# Cette liste permet donc de savoir si deux utilisateurs veulent parler ensemble et aussi de savoir lequel devra jouer le "serveur" et lequel le "client" en comparant les id
 sending = []
 
-# fonctions de communications
+# fonctions de communication
+
+def send_text(conn,text,id): # permet d'envoyer des données à travers la connection socket
+    text_encoded = text.encode("utf-8") # encode le texte entré en argument à l'aide de "utf-8"
+    conn.sendall(text_encoded) # envoi les données encodées
+    if text[0] == "0" : # si l'on détecte que le texte commence par 0, c'est donc un des codes de la liste code_dictionary
+        print("Console",id,": Server send :",text,"(",code_dictionary[text],")") # on affiche la signification du code
+    else: #sinon
+        print("Console",id,": Server send :",text) # on affiche simplement le texte envoyé
 
 
-
-
-# Fonction qui gère l'arrêt du programme
-"""
-def on_key_press(event):
-    if event.name == 'q':
-        print('Vous avez appuyé sur la touche "q"!')
-        keyboard.unhook_all()  # Pour empêcher les rappels ultérieurs
-        exit()"""
-
-def send_text(conn,text,id): # permet d'envoyer des données
-    text_encoded = text.encode("utf-8")
-    conn.sendall(text_encoded)
-    if text[0] == "0" :
-        print("Console",id,": Server send :",text,"(",code_dictionary[text],")")
-    else:
-        print("Console",id,": Server send :",text)
-
-
-def recv_text(conn,id): # permet d'attendre de recevoir des données
-    while True:
-        text = conn.recv(1024) # taille du buffer encore à voir
-        text = text.decode("utf-8")
+def recv_text(conn,id): # permet d'attendre de recevoir des données à travers la connection socket
+    while True: # boucle infinie
+        text = conn.recv(1024) # on reçoit les données
+        text = text.decode("utf-8") # on les décode
         if not text:
             return
-        if text[0] == "0" :
-            print("Console",id,": Client",id,"send :",text,"(",code_dictionary[text],")")
-        else:
-            print("Console",id,": Client",id,"send :",text)
+        if text[0] == "0" : # si l'on détecte que le texte commence par 0, c'est donc un des codes de la liste code_dictionary
+            print("Console",id,": Client",id,"send :",text,"(",code_dictionary[text],")") # on affiche la signification du code
+        else: # sinon
+            print("Console",id,": Client",id,"send :",text) # on affiche simplement le texte envoyé
 
-        if text != "" or text != " ":
-            return text
+        if text != "" or text != " ": # si le texte est différent de rien ou d'un espace
+            return text # on casse la boucle infinie while True
 
 # fonctions secondaires
 
 def reset_list(): # Cette fonction remet à zero la liste des utilisateurs
-    with open("username_ip.txt","w") as users_list:
-        users_list.write("")
+    with open("username_ip.txt","w") as users_list: # on ouvre le fichier texte username_ip.txt
+        users_list.write("") # et on remplace tout le contenu par rien
 
     print("Console : The list has been resetted")
 
 
 def initialisation(port_num): # Initialise le serveur sur un port
     global socket
-    host, port = ("", port_num)
-    socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    socket.bind((host,port))
+    host, port = ("", port_num) # pas besoin d'ip vu que le serveur est forcément en localhost
+    socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #_à_remplir
+    socket.bind((host,port)) #_à_remplir
     print("Console : Server is up on port",port_num,"!")
 
 
 def wait_connection(id): # Attends une connection
     while True:
-        socket.listen()
-        conn, addr = socket.accept()
+        socket.listen() # on écoute sur la connection
+        conn, addr = socket.accept() # quand quelqu'un arrive on accepte qu'il se connecte
         print("Console : Client",id,"connected !")
-        thread_with_client = threading.Thread(target=connection_with_client,args=(conn,id))
+        thread_with_client = threading.Thread(target=connection_with_client,args=(conn,id)) # on crée un thread pour chaque nouveau utilisateur
 
-        thread_with_client.start()
+        thread_with_client.start() # on lance le thread
         return()
 
 
-def ip_and_port(conn,id): # retourne l'ip et le port
-    ip,port = conn.getpeername()
+def ip_and_port(conn,id): # retourne l'ip et le port de l'utilisateur actuel du thread
+    ip,port = conn.getpeername() # méthode du module socket qui retourne directement l'ip et le port de la connection "conn"
     print("Console",0,": Client",str(id),":",str(ip),":",str(port))
     ip_str = str(ip)
     port_str = str(port)
-    return((ip_str,port_str))
+    return((ip_str,port_str))# retourne l'ip et le port en format string en non en integer
 
 
-def return_from_list(i):
+def return_from_list(i): # ressort des informations du fichier username_ip.txt (0 = username , 1 = ip, 2 = port)
     return_items_list = []
     with open("username_ip.txt","r") as users_list:
         for user in users_list:
@@ -92,7 +83,7 @@ def return_from_list(i):
     return(return_items_list)
 
 
-def check_username(user): # A vérifer quand il y aura plusieurs clients
+def check_username(user): # Permet de vérifier qu'il n'y ait pas plusieurs utilisateurs avec le même nom / agit lors du choix de pseudo
     for username in return_from_list(0):
         if username.lower() == user.lower():
             print("Invalid Username")
@@ -101,7 +92,7 @@ def check_username(user): # A vérifer quand il y aura plusieurs clients
     return("001") # code = 001 : nom d'utilisateur valide
 
 
-def add_to_list(username,ip_and_port,id):
+def add_to_list(username,ip_and_port,id): # Ajoute quelqu'un à la liste username_ip.txt avec son nom, ip et port
     with open("username_ip.txt","a") as users_list:
         users_list.write(username + " " + ip_and_port[0] + " " + ip_and_port[1] + "\n")
     print("Console",id,":",username + " / " + ip_and_port[0] + " / " + ip_and_port[1] + " has been added to the list.\n")
