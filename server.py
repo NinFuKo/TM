@@ -1,9 +1,9 @@
 # importation de modules
 
-import socket
-import threading
-import time
-import keyboard
+import socket # module qui permet d'ouvrir ou de se connecter sur un adresse ip
+import threading # module pour executer plusieurs fonctions en même temps
+import time  # permet de mettre en pause le programme
+#import keyboard # permet de détecter les touches appuyées
 
 # variables globales
 
@@ -17,11 +17,12 @@ sending = []
 
 
 # Fonction qui gère l'arrêt du programme
+"""
 def on_key_press(event):
     if event.name == 'q':
         print('Vous avez appuyé sur la touche "q"!')
         keyboard.unhook_all()  # Pour empêcher les rappels ultérieurs
-        exit()
+        exit()"""
 
 def send_text(conn,text,id): # permet d'envoyer des données
     text_encoded = text.encode("utf-8")

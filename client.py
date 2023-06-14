@@ -1,5 +1,8 @@
-import socket
-import time
+import socket # module qui permet d'ouvrir ou de se connecter sur un adresse ip
+import time # permet de mettre en pause le programme
+import threading # module pour executer plusieurs fonctions en même temps
+
+finish = False
 
 """
 # Fonction qui gère l'arrêt du programme
@@ -78,15 +81,37 @@ def wait_connection(): # Attends une connection
         conn_c, addr = socket.accept()
         print("Console : Someone is connected !")
         return(conn_c)
+    
+def listen(conn):
+    while True:
+        text = recv_text(conn)
+        if text != "": print(text)
+        
 
+def write_message(conn):
+    while True:
+        text = input()
+        send_text(conn,text)
 
 def main_second_part_host(conn,port): # 006  
     other_client = recv_text(conn)
     send_text(conn,"008")
     conn.close()
     initialisation(port)
-    conn_c = wait_connection()
+    conn = wait_connection()
 
+    # Création des threads
+    listen_thread = threading.Thread(target=listen,args=(conn,))
+    send_thread = threading.Thread(target=write_message,args=(conn,))
+
+    # Démarrage des threads
+    listen_thread.start()
+    send_thread.start()
+
+    # Attendre que les threads se terminent (ce qui ne se produira jamais dans ce cas)
+    listen_thread.join()
+    send_thread.join()
+    
 
 
 def main_second_part_normal(conn): # 007
@@ -98,9 +123,23 @@ def main_second_part_normal(conn): # 007
     conn.close()
     time.sleep(3)
     print("--")
-    initialisation_et_connexion(client_ip,client_port)
+    conn = initialisation_et_connexion(client_ip,client_port)
 
-    
+
+
+    # Création des threads
+    listen_thread = threading.Thread(target=listen,args=(conn,))
+    send_thread = threading.Thread(target=write_message,args=(conn,))
+
+    # Démarrage des threads
+    listen_thread.start()
+    send_thread.start()
+
+    # Attendre que les threads se terminent (ce qui ne se produira jamais dans ce cas)
+    listen_thread.join()
+    send_thread.join()
+
+            
 
 
     
