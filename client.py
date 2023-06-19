@@ -156,51 +156,55 @@ def main():
             send_text(conn,"004") 
             return # Permet de quitter
 
-        while True:
-            list_of_ready = recv_text(conn)
-            if list_of_ready != None:
+        choose_your_friend(conn=conn)
 
-                k = list_of_ready.find(":")
-                list_of_ready = list_of_ready[k+1:]
-                list_of_ready = list_of_ready.split(" ")
-                if list_of_ready[0] == "":
-                    send_text(conn,"005")
-                else:
-                    while True:
-                        print("Choose with who you want to talk")
-                        for user in list_of_ready:   
-                            if user != "" :
-                                print("-",user)
-                        print("""Or you can refresh (type refresh)""")
-
-                        while True:
-                            wanted = input("")
-                            for user in list_of_ready:
-                                if wanted.lower() != "refresh":
-                                    break
-                                elif user.lower() == wanted.lower():
-                                    send_text(conn,wanted)
-                                    code = recv_text(conn)
-                                    if code == "006":
-                                        _, port = conn.getsockname()
-
-                                            
-                                        main_second_part_host(conn,port)
-                                        return # lance la suite du programme
-
-                                        
-                                    elif code == "007":
-                                        main_second_part_normal(conn)
-
-        
-                        
-
-            
     except ConnectionRefusedError:
         print("Error")
 
     finally:
         conn.close()
+
+
+
+def choose_your_friend(conn):
+    while True:
+        list_of_ready = recv_text(conn)
+        if list_of_ready != None:
+
+            k = list_of_ready.find(":")
+            list_of_ready = list_of_ready[k+1:]
+            list_of_ready = list_of_ready.split(" ")
+            if list_of_ready[0] == "":
+                send_text(conn,"005")
+            else:
+                print("Choose with who you want to talk or refresh (type refresh)")
+                for user in list_of_ready:   
+                    if user != "" :
+                        print("-",user)
+
+                while True:
+                    wanted = input("")
+                    for user in list_of_ready:
+                        if wanted.lower() == "refresh":
+                            send_text(conn,wanted)
+                            choose_your_friend(conn=conn)
+                        elif user.lower() == wanted.lower():
+                            send_text(conn,wanted)
+                            code = recv_text(conn)
+                            if code == "006":
+                                _, port = conn.getsockname()
+
+                                    
+                                main_second_part_host(conn,port)
+                                return # lance la suite du programme
+
+                                
+                            elif code == "007":
+                                main_second_part_normal(conn)
+                            
+
+                
+
 
 main()
 

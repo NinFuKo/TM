@@ -164,7 +164,6 @@ def connection_with_client(conn,id): # communication avec client
                 sending.append(person_choosen)
                 sending.append(id)
                 print(sending)
-
                 while True:
                     is_server = False
                     ready_to_chat = False
