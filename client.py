@@ -2,19 +2,9 @@ import socket # module qui permet d'ouvrir ou de se connecter sur un adresse ip
 import time # permet de mettre en pause le programme
 import threading # module pour executer plusieurs fonctions en même temps
 
+
 finish = False
 
-"""
-# Fonction qui gère l'arrêt du programme
-def on_key_press(event):
-    if event.name == 'q':
-        print('Vous avez appuyé sur la touche "q"!')
-        keyboard.unhook_all()  # Pour empêcher les rappels ultérieurs
-        exit()
-
-# Associe la fonction on_key_press à l'appui de la touche "q"
-keyboard.on_press(on_key_press)
-"""
 
 def is_port_open(port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -176,27 +166,31 @@ def main():
                 if list_of_ready[0] == "":
                     send_text(conn,"005")
                 else:
-                    print("Choose with who you want to talk")
-                    for user in list_of_ready:   
-                        if user != "" :
-                            print("-",user)
-
                     while True:
-                        wanted = input("")
-                        for user in list_of_ready:
-                            if user.lower() == wanted.lower():
-                                send_text(conn,user)
-                                code = recv_text(conn)
-                                if code == "006":
-                                    _, port = conn.getsockname()
+                        print("Choose with who you want to talk")
+                        for user in list_of_ready:   
+                            if user != "" :
+                                print("-",user)
+                        print("""Or you can refresh (type refresh)""")
+
+                        while True:
+                            wanted = input("")
+                            for user in list_of_ready:
+                                if wanted.lower() != "refresh":
+                                    break
+                                elif user.lower() == wanted.lower():
+                                    send_text(conn,wanted)
+                                    code = recv_text(conn)
+                                    if code == "006":
+                                        _, port = conn.getsockname()
+
+                                            
+                                        main_second_part_host(conn,port)
+                                        return # lance la suite du programme
 
                                         
-                                    main_second_part_host(conn,port)
-                                    return # lance la suite du programme
-
-                                    
-                                elif code == "007":
-                                    main_second_part_normal(conn)
+                                    elif code == "007":
+                                        main_second_part_normal(conn)
 
         
                         

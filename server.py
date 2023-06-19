@@ -13,6 +13,8 @@ code_dictionary = {"001":"Valid username","002":"Invalid username","003":"Want t
 # Cette liste permet donc de savoir si deux utilisateurs veulent parler ensemble et aussi de savoir lequel devra jouer le "serveur" et lequel le "client" en comparant les id
 sending = []
 
+number_of_client_added = 0
+
 # fonctions de communication
 
 def send_text(conn,text,id): # permet d'envoyer des données à travers la connection socket
@@ -97,6 +99,9 @@ def add_to_list(username,ip_and_port,id): # Ajoute quelqu'un à la liste usernam
         users_list.write(username + " " + ip_and_port[0] + " " + ip_and_port[1] + "\n")
     print("Console",id,":",username + " / " + ip_and_port[0] + " / " + ip_and_port[1] + " has been added to the list.\n")
 
+    number_of_client_added =+ 1
+    print("Number of client added :",number_of_client_added)
+
 
 def menu(conn,id):
     while True:
@@ -154,35 +159,36 @@ def connection_with_client(conn,id): # communication avec client
         if choose == "005": time.sleep(5)
         else:
             person_choosen = choose
-            sending.append(username)
-            sending.append(person_choosen)
-            sending.append(id)
-            print(sending)
+            if person_choosen.lower() != "refresh":
+                sending.append(username)
+                sending.append(person_choosen)
+                sending.append(id)
+                print(sending)
 
-            while True:
-                is_server = False
-                ready_to_chat = False
-                for i in range(0, len(sending), 3):
-                    if sending[i+1] == username and sending[i] == person_choosen:
-                        ready_to_chat = True
-                        if sending[i+2] > id:
-                            is_server = True
+                while True:
+                    is_server = False
+                    ready_to_chat = False
+                    for i in range(0, len(sending), 3):
+                        if sending[i+1] == username and sending[i] == person_choosen:
+                            ready_to_chat = True
+                            if sending[i+2] > id:
+                                is_server = True
+                            break
+                    if ready_to_chat and is_server:
+                        send_text(conn, "006", id)
                         break
-                if ready_to_chat and is_server:
-                    send_text(conn, "006", id)
-                    break
-                elif ready_to_chat:
-                    send_text(conn,"007",id)
-                    break
-                else:
-                    time.sleep(1)
+                    elif ready_to_chat:
+                        send_text(conn,"007",id)
+                        break
+                    else:
+                        time.sleep(1)
 
-            time.sleep(1)
-            ip_of_choosen = return_someone(person_choosen)
-            send_text(conn,ip_of_choosen,id)
-            if recv_text(conn,id) == "008":
-                print("Thread",id,": finished")
-                return
+                time.sleep(1)
+                ip_of_choosen = return_someone(person_choosen)
+                send_text(conn,ip_of_choosen,id)
+                if recv_text(conn,id) == "008":
+                    print("Thread",id,": finished")
+                    return
 
 def main():
     id_count = 0
