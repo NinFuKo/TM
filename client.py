@@ -1,55 +1,53 @@
 import socket # module qui permet d'ouvrir ou de se connecter sur un adresse ip
 import time # permet de mettre en pause le programme
 import threading # module pour executer plusieurs fonctions en même temps
-from os import system, name
+from os import system, name 
 
 
 finish = False
 
-def clear_terminal():
-    # for windows
+def clear_terminal(): #_à_citer_la_source
+    """Rafraîchit le terminal de l'utilisateur (... -> ...)"""
+    # pour windows
     if name == 'nt':
         _ = system('cls')
  
-    # for mac and linux(here, os.name is 'posix')
+    # pour mac et linux
     else:
         _ = system('clear')
 
-def is_port_open(port):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    result = sock.connect_ex(('localhost', port))
-    sock.close()
-    return result == 0
-
 
 def initialisation_et_connexion(host,port):
+    """Prend l'ip et le port pour se connecter dessus avec le module socket (string, integer -> socket)"""
     global socket
     host, port = (host,port)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host,port))
-    #print("Connected")
     return(sock)
 
 def send_text(conn,text):
+        """Prend la connexion et le texte et l'envoie (socket, string -> ...)"""
         text_encoded = text.encode("utf-8")
         conn.sendall(text_encoded)
-        #print("Client send : ",text)
+
 
 def recv_text(conn):
+    """Prend la connecion et reçoit les données (socket -> string)"""
     while True:
-        data = conn.recv(1024) # recevoir les données de la connexion
+        data = conn.recv(1024)
         data = data.decode("utf-8")
         if data == "": return
         else:
-            #print("Server send :",data)
             return(data)
      
 def choose_username(conn):
+    """Prend la connexion et permet de choisir un nom puis l'envoie et le retourne (socket -> string)"""
     username = input("Choose a username : ")
     send_text(conn,username)
     return username
 
 def choose_persons_ready(conn):
+    """Prend la connexion et reçoit la liste de personne prêtes"""
     while True:
         print("-/-")
         persons_ready = recv_text(conn)
@@ -58,6 +56,7 @@ def choose_persons_ready(conn):
         
 
 def menu():
+    """Permet de quitter le programme (... -> ...)"""
     while True:
         print("1. Ask for ready persons")
         print("2. Quit")
@@ -68,34 +67,37 @@ def menu():
             return "004"
         clear_terminal()
         
-def initialisation(port_num): # Initialise le client host sur un port
+def initialisation(port_num):
+    """Prend un numéro de port et initialise le client (host) sur ce port (integer -> ...)"""
     global socket
     host, port = ("", port_num)
     socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     socket.bind((host,port))
     clear_terminal()
-    print("Host is up on port",port_num,"!")
     
 
-def wait_connection(): # Attends une connection
+def wait_connection():
+    """Attend une connexion et retourne le socket (... -> socket)"""
     while True:
         socket.listen()
         conn_c, addr = socket.accept()
-        #print("Console : Someone is connected !")
         return(conn_c)
     
 def listen(conn,wanted):
+    """Prend la connexion et le nom de la personne connectée et écoute et affiche les infos reçues (socket, string -> ...)"""
     while True:
         text = recv_text(conn)
         if text != "" and text != None: print(wanted,":",text)
         
 
-def write_message(conn,username):
+def write_message(conn):
+    """Prend la connexion et envoie les messages (string -> ...)"""
     while True:
         text = input("")
         send_text(conn,text)
 
-def main_second_part_host(conn,port,username,wanted): # 006  
+def main_second_part_host(conn,port,username,wanted):
+    """Prend la connexion, le port utilisé précédemment, notre nom et celui du destinataire, et s'occupe d'ouvrir un port comme serveur et de communiquer (socket, integer, string, string -> ...)""" 
     other_client = recv_text(conn)
     send_text(conn,"008")
     conn.close()
@@ -112,13 +114,14 @@ def main_second_part_host(conn,port,username,wanted): # 006
     listen_thread.start()
     send_thread.start()
 
-    # Attendre que les threads se terminent (ce qui ne se produira jamais dans ce cas)
+    # Attendre que les threads se terminent
     listen_thread.join()
     send_thread.join()
     
 
 
-def main_second_part_normal(conn,username,wanted): # 007
+def main_second_part_normal(conn,username,wanted):
+    """"Prend la connexion, notre nom d'utilisateur et le nom du destinataire pour se connecter au client (host)"""
     other_client = recv_text(conn)
     client_ip= other_client.split(" ")[1]
     client_port= other_client.split(" ")[2]
@@ -150,6 +153,7 @@ def main_second_part_normal(conn,username,wanted): # 007
     
         
 def main():
+    """Première fonction executée (... -> ...)"""
     clear_terminal()
     try:
         conn = initialisation_et_connexion("localhost",5566)
@@ -184,6 +188,7 @@ def main():
 
 
 def choose_your_friend(conn,username):
+    """Second part of main (... -> ...)"""
     repetition = 0
     while True:
         repetition += 1
@@ -231,5 +236,3 @@ def choose_your_friend(conn,username):
 
 
 main()
-
-# blocage sur la connexion entre les deux clients
