@@ -110,6 +110,7 @@ def add_to_list(username,ip_and_port,id):
     print("Number of client added :",number_of_client_added)
 
 
+
 def menu(conn,id):
     """Prend le socket et l'id du thread et permet de continuer ou arrêter le programme (socket, integer -> string(code))"""
     while True:
