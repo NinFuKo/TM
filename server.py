@@ -109,7 +109,7 @@ def check_username(user):
 
 def add_to_list(username,ip_and_port,id):
     """Prend le nom d'utilisateur, le couple ip,port et l'id du thread pour ajouter cette personne dans la liste des clients connectés (string, tuple, integer -> ...)"""
-    db.insert({"username":username,"ip":ip_and_port[0],"port":ip_and_port[1],"id":id,"wanted":""})
+    db.insert({"username":username,"ip":ip_and_port[0],"port":ip_and_port[1],"id":id,"wanted":"","need_to_change": False})
 
     print("Console",id,":",username + " / " + ip_and_port[0] + " / " + ip_and_port[1] + " has been added to the list.\n")
 
@@ -169,6 +169,7 @@ def check_want(user,choose):
     while True:
         time.sleep(0.01 * randint(1,150)) # Cela permet d'avoir les threads qui n'interagissent pas avec la base de données en même temps et qui donc ne créent pas de problème
         wanted_infos = db.search(User.username == choose)
+        if wanted_infos["need_to_change"] == True: return("011")
         wanted_info_wanted = wanted_infos[0]["wanted"]
         wanted_info_id = int(wanted_infos[0]["id"])
 
@@ -188,7 +189,9 @@ def check_want(user,choose):
                 print("Erreur", user_info_id ," - ", wanted_info_id)
 
             
-
+def remove_from_db(username):
+    db.remove(User.username == username)
+    print("L'utilisateur :", username, "à été enlevé de la base de données")
 
 
 def connection_with_client(conn,id):
@@ -229,6 +232,7 @@ def connection_with_client(conn,id):
 
                 if recv_text(conn,id) == "008":
                     print("Thread",id,": finished")
+                    remove_from_db(username)
                     return
 
 def main():
@@ -243,7 +247,6 @@ def main():
 
 
 #####
-print("yaa")
 main()
 
 
