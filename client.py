@@ -96,6 +96,11 @@ def write_message(conn):
         text = input("")
         send_text(conn,text)
 
+def notification(conn):
+    while True:
+        if recv_text(conn) == "010":
+            print("yaaassss")
+
 def main_second_part_host(conn,port,username,wanted):
     """Prend la connexion, le port utilisé précédemment, notre nom et celui du destinataire, et s'occupe d'ouvrir un port comme serveur et de communiquer (socket, integer, string, string -> ...)""" 
     other_client = recv_text(conn)
@@ -108,16 +113,16 @@ def main_second_part_host(conn,port,username,wanted):
 
     # Création des threads
     listen_thread = threading.Thread(target=listen,args=(conn,wanted))
-    send_thread = threading.Thread(target=write_message,args=(conn,username))
-
+    send_thread = threading.Thread(target=write_message,args=(conn,))
+    
     # Démarrage des threads
     listen_thread.start()
     send_thread.start()
+    
 
     # Attendre que les threads se terminent
     listen_thread.join()
     send_thread.join()
-    
 
 
 def main_second_part_normal(conn,username,wanted):
@@ -137,7 +142,7 @@ def main_second_part_normal(conn,username,wanted):
 
     # Création des threads
     listen_thread = threading.Thread(target=listen,args=(conn,wanted))
-    send_thread = threading.Thread(target=write_message,args=(conn,username))
+    send_thread = threading.Thread(target=write_message,args=(conn,))
 
     # Démarrage des threads
     listen_thread.start()
@@ -190,6 +195,7 @@ def main():
 def choose_your_friend(conn,username):
     """Second part of main (... -> ...)"""
     repetition = 0
+
     while True:
         repetition += 1
         list_of_ready = recv_text(conn)
@@ -198,6 +204,9 @@ def choose_your_friend(conn,username):
             k = list_of_ready.find(":")
             list_of_ready = list_of_ready[k+1:]
             list_of_ready = list_of_ready.split(" ")
+
+
+
             if list_of_ready[0] == "":
                 if repetition == 1: print("Waiting...")
                 else: print("...")
@@ -210,26 +219,31 @@ def choose_your_friend(conn,username):
                         print("-",user)
 
                 while True:
-                    wanted = input("")
+                    wanted = input("").lower()
                     
                     for user in list_of_ready:
+                        n = str(user).find("-")
+                        user = user[:n]
                         if wanted.lower() == "refresh":
                             send_text(conn,wanted)
                             choose_your_friend(conn,username)
                         elif user.lower() == wanted.lower():
-                            if wanted.lower() == "refresh": send_text(conn,wanted)
-                            else: send_text(conn,user)
+                            
+                            send_text(conn,wanted)
                             code = recv_text(conn)
                             if code == "006":
                                 _, port = conn.getsockname()
 
-                                    
+                                time.sleep(3)    
                                 main_second_part_host(conn,port,username,user)
                                 return # lance la suite du programme
 
                                 
                             elif code == "007":
+                                time.sleep(3)
                                 main_second_part_normal(conn,username,user)
+
+                        
                             
 
                 

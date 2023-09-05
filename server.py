@@ -1,18 +1,23 @@
 # importation de modules
 
+from tinydb import TinyDB, Query
 import socket # module qui permet d'ouvrir ou de se connecter sur un adresse ip
 import threading # module pour executer plusieurs fonctions en même temps
 import time  # permet de mettre en pause le programme
+from random import randint
 
 
 # liste des codes (protocole)
-code_dictionary = {"001":"Valid username","002":"Invalid username","003":"Want to talk","004":"Quit","005":"No one is up","006":"Second person is ready (client : host)","007":"Second person is ready (client : client)","008":"Client has received the other ip"}
+code_dictionary = {"001":"Valid username","002":"Invalid username","003":"Want to talk","004":"Quit","005":"No one is up","006":"Second person is ready (client : host)","007":"Second person is ready (client : client)","008":"Client has received the other ip","010":"notification"}
 
 # liste qui sert à mettre le nom d'utilisateur, la personne choisie et l'id du thread pour chaque utilisateur ayant fait un choix de destinataire
 # Cette liste permet donc de savoir si deux utilisateurs veulent parler ensemble et aussi de savoir lequel devra jouer le "serveur" et lequel le "client" en comparant les id
 sending = []
 
 number_of_client_added = 0
+
+db = TinyDB('db.json') # initialisation de la base de données
+User = Query()
 
 
 def send_text(conn,text,id):
@@ -44,8 +49,7 @@ def recv_text(conn,id):
 
 def reset_list():
     """Remet la liste de personne à zero"""
-    with open("username_ip.txt","w") as users_list: 
-        users_list.write("") 
+    db.truncate()
 
     print("Console : The list has been resetted")
 
@@ -92,18 +96,21 @@ def return_from_list(i):
 
 def check_username(user):
     """Prend un nom d'utilisateur et vérifie qu'il soit disponible (string -> string[code])"""
-    for username in return_from_list(0):
-        if username.lower() == user.lower():
-            print("Invalid Username")
-            return("002") # code = 002 : code d'erreur du nom d'utilisateur
+    user = user.lower()
+    result = db.search(User.username == user)
+    if len(result) == 0:
+        return("001")
+    else:
+        return("002")
+
     
-    return("001") # code = 001 : nom d'utilisateur valide
+    
 
 
 def add_to_list(username,ip_and_port,id):
     """Prend le nom d'utilisateur, le couple ip,port et l'id du thread pour ajouter cette personne dans la liste des clients connectés (string, tuple, integer -> ...)"""
-    with open("username_ip.txt","a") as users_list:
-        users_list.write(username + " " + ip_and_port[0] + " " + ip_and_port[1] + "\n")
+    db.insert({"username":username,"ip":ip_and_port[0],"port":ip_and_port[1],"id":id,"wanted":""})
+
     print("Console",id,":",username + " / " + ip_and_port[0] + " / " + ip_and_port[1] + " has been added to the list.\n")
 
     number_of_client_added =+ 1
@@ -122,24 +129,65 @@ def menu(conn,id):
             return "003"
 
 
-def persons_ready(username):
+def persons_ready(username_of_client):
     """Prend un nom d'utilisateur et retourne la liste des gens connectés en enlevant l'utilisateur (string -> string)"""
-    in_list_raw = return_from_list(0)
     in_list = "list :"
-    for user in in_list_raw:
-        if user.lower() != username.lower(): # Permet d'enlever le nom d'utilisateur de la personne à qui on envoie la liste
-            in_list += user
+    all = db.all()
+    for user_infos in all:
+        username = user_infos["username"]
+        wanted = user_infos["wanted"]
+        if username_of_client.lower() != username.lower():
+            in_list += str(username)
+            in_list += "-->"
+            in_list += str(wanted)
             in_list += " "
     return(in_list)
+    
+
+    
+
 
 
 def return_someone(user):
     """Prend un nom d'utilisateur et retourne son nom, ip et port (string -> string)"""
-    with open("username_ip.txt","r") as users_list:
-        for line in users_list:
-            if user == line.split()[0]:
-                return line
-    
+    wanted_infos = db.search(User.username == user)[0]
+    infos = ""
+    infos += str(wanted_infos["username"])
+    infos += " "
+    infos += str(wanted_infos["ip"])
+    infos += " "
+    infos += str(wanted_infos["port"])
+    return infos
+
+            
+def update_wanted_to_list(user,wanted):
+    db.update({"wanted":wanted}, User.username == user)
+
+
+
+def check_want(user,choose):
+    while True:
+        time.sleep(0.01 * randint(1,150)) # Cela permet d'avoir les threads qui n'interagissent pas avec la base de données en même temps et qui donc ne créent pas de problème
+        wanted_infos = db.search(User.username == choose)
+        wanted_info_wanted = wanted_infos[0]["wanted"]
+        wanted_info_id = int(wanted_infos[0]["id"])
+
+        user_infos = db.search(User.username == user)
+        user_info_wanted = user_infos[0]["wanted"]
+        user_info_id = int(user_infos[0]["id"])
+        
+        if wanted_info_wanted == user:
+            print(wanted_info_wanted," == ", user)
+            if wanted_info_id > user_info_id:
+                print("True 1 ")
+                return("006")
+            elif wanted_info_id < user_info_id:
+                print("True 2")
+                return("007")
+            else:
+                print("Erreur", user_info_id ," - ", wanted_info_id)
+
+            
 
 
 
@@ -157,10 +205,10 @@ def connection_with_client(conn,id):
         send_text(conn,code,id)
         if code == "001": break
 
-    
+    username = username.lower()
     add_to_list(username,(ip,port),id)
 
-    
+   
 
     if menu(conn,id) == "004": return
 
@@ -172,7 +220,36 @@ def connection_with_client(conn,id):
         else:
             person_choosen = choose
             if person_choosen.lower() != "refresh":
-                sending.append(username)
+                update_wanted_to_list(username,choose)
+                code = check_want(username,choose)
+                
+                send_text(conn,code,id)
+                ip_of_choosen = return_someone(choose)
+                send_text(conn,ip_of_choosen,id)
+
+                if recv_text(conn,id) == "008":
+                    print("Thread",id,": finished")
+                    return
+
+def main():
+    """Première fonction executée"""
+    id_count = 0
+
+    reset_list()
+    initialisation(5566)
+    while True:
+        wait_connection(id_count)
+        id_count += 1
+
+
+#####
+print("yaa")
+main()
+
+
+# username pas plus grand que 15 caractère (ajouter une limite) + interdire certain caratère (ex -)
+
+"""sending.append(username)
                 sending.append(person_choosen)
                 sending.append(id)
                 print(sending)
@@ -199,19 +276,4 @@ def connection_with_client(conn,id):
                 send_text(conn,ip_of_choosen,id)
                 if recv_text(conn,id) == "008":
                     print("Thread",id,": finished")
-                    return
-
-def main():
-    """Première fonction executée"""
-    id_count = 0
-
-    reset_list()
-    initialisation(5566)
-    while True:
-        wait_connection(id_count)
-        id_count += 1
-
-
-#####
-
-main()
+                    return"""
