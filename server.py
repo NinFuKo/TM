@@ -163,13 +163,21 @@ def return_someone(user):
 def update_wanted_to_list(user,wanted):
     db.update({"wanted":wanted}, User.username == user)
 
+def update_need_to_change(username):
+    db.update({"need_to_change":True}, User.wanted == username)
 
+def change_wanted(user):
+    pass
 
 def check_want(user,choose):
     while True:
         time.sleep(0.01 * randint(1,150)) # Cela permet d'avoir les threads qui n'interagissent pas avec la base de données en même temps et qui donc ne créent pas de problème
         wanted_infos = db.search(User.username == choose)
-        if wanted_infos["need_to_change"] == True: return("011")
+        print(wanted_infos)
+        if wanted_infos != "":
+            if wanted_infos[0]["need_to_change"] == True: 
+                print("Yoffff", user)
+                change_wanted(user)
         wanted_info_wanted = wanted_infos[0]["wanted"]
         wanted_info_id = int(wanted_infos[0]["id"])
 
@@ -232,6 +240,7 @@ def connection_with_client(conn,id):
 
                 if recv_text(conn,id) == "008":
                     print("Thread",id,": finished")
+                    update_need_to_change(username)
                     remove_from_db(username)
                     return
 
