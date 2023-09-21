@@ -8,7 +8,7 @@ from random import randint
 
 
 # liste des codes (protocole)
-code_dictionary = {"001":"Valid username","002":"Invalid username","003":"Want to talk","004":"Quit","005":"No one is up","006":"Second person is ready (client : host)","007":"Second person is ready (client : client)","008":"Client has received the other ip","010":"notification"}
+code_dictionary = {"001":"Valid username","002":"Invalid username","003":"Want to talk","004":"Quit","005":"No one is up","006":"Second person is ready (client : host)","007":"Second person is ready (client : client)","008":"Client has received the other ip","010":"notification","011":"need to change wanted"}
 
 # liste qui sert à mettre le nom d'utilisateur, la personne choisie et l'id du thread pour chaque utilisateur ayant fait un choix de destinataire
 # Cette liste permet donc de savoir si deux utilisateurs veulent parler ensemble et aussi de savoir lequel devra jouer le "serveur" et lequel le "client" en comparant les id
@@ -150,34 +150,47 @@ def persons_ready(username_of_client):
 
 def return_someone(user):
     """Prend un nom d'utilisateur et retourne son nom, ip et port (string -> string)"""
-    wanted_infos = db.search(User.username == user)[0]
-    infos = ""
-    infos += str(wanted_infos["username"])
-    infos += " "
-    infos += str(wanted_infos["ip"])
-    infos += " "
-    infos += str(wanted_infos["port"])
-    return infos
+    if len(db.search(User.username == user)) >= 0:
+        wanted_infos = db.search(User.username == user)[0]
+        infos = ""
+        infos += str(wanted_infos["username"])
+        infos += " "
+        infos += str(wanted_infos["ip"])
+        infos += " "
+        infos += str(wanted_infos["port"])
+        return infos
 
             
 def update_wanted_to_list(user,wanted):
     db.update({"wanted":wanted}, User.username == user)
 
-def update_need_to_change(username):
-    db.update({"need_to_change":True}, User.wanted == username)
+def update_need_to_change_true(username,wanted):
+    global User
+    condition_1 = User.wanted == username
+    condition_2 = User.username != wanted
+    db.update({"need_to_change": True},condition_1 & condition_2)
+    
 
-def change_wanted(user):
-    pass
+def update_need_to_change_false(username):
+    global User
+    condition_1 = User.username == username
+    db.update({"need_to_change": False}, condition_1)
+
+def reset_wanted(user):
+    db.update({"wanted":""},User.username == user)
 
 def check_want(user,choose):
     while True:
         time.sleep(0.01 * randint(1,150)) # Cela permet d'avoir les threads qui n'interagissent pas avec la base de données en même temps et qui donc ne créent pas de problème
-        wanted_infos = db.search(User.username == choose)
-        print(wanted_infos)
-        if wanted_infos != "":
-            if wanted_infos[0]["need_to_change"] == True: 
-                print("Yoffff", user)
-                change_wanted(user)
+        user_infos = db.search(User.username == user)
+        if user_infos[0]["need_to_change"] == True:
+            print("aiieee")
+            update_need_to_change_false(user)
+            reset_wanted(user)
+
+            return("011")
+        else:
+            wanted_infos = db.search(User.username == choose)
         wanted_info_wanted = wanted_infos[0]["wanted"]
         wanted_info_id = int(wanted_infos[0]["id"])
 
@@ -188,10 +201,8 @@ def check_want(user,choose):
         if wanted_info_wanted == user:
             print(wanted_info_wanted," == ", user)
             if wanted_info_id > user_info_id:
-                print("True 1 ")
                 return("006")
             elif wanted_info_id < user_info_id:
-                print("True 2")
                 return("007")
             else:
                 print("Erreur", user_info_id ," - ", wanted_info_id)
@@ -199,7 +210,36 @@ def check_want(user,choose):
             
 def remove_from_db(username):
     db.remove(User.username == username)
-    print("L'utilisateur :", username, "à été enlevé de la base de données")
+    print("L'utilisateur :", username, "n'est plus dans la base de données")
+
+
+def connection_client_client(conn,id,username):
+    list_of_ready = persons_ready(username)
+    send_text(conn,list_of_ready,id)
+    choose = recv_text(conn,id)
+    if choose == "005": 
+        time.sleep(5)
+        connection_client_client(conn,id,username)
+    else:
+        person_choosen = choose
+        if person_choosen.lower() != "refresh":
+            update_wanted_to_list(username,choose)
+            code = check_want(username,choose)
+            send_text(conn,code,id)
+            if code == "011":
+                connection_client_client(conn,id,username)
+
+            ip_of_choosen = return_someone(choose)
+            send_text(conn,ip_of_choosen,id)
+
+            if recv_text(conn,id) == "008":
+                print("Thread",id,": finished")
+                update_need_to_change_true(username,choose)
+                remove_from_db(username)
+                return
+        else:
+            connection_client_client(conn,id,username)
+
 
 
 def connection_with_client(conn,id):
@@ -219,30 +259,10 @@ def connection_with_client(conn,id):
     username = username.lower()
     add_to_list(username,(ip,port),id)
 
-   
-
     if menu(conn,id) == "004": return
 
-    while True:
-        list_of_ready = persons_ready(username)
-        send_text(conn,list_of_ready,id)
-        choose = recv_text(conn,id)
-        if choose == "005": time.sleep(5)
-        else:
-            person_choosen = choose
-            if person_choosen.lower() != "refresh":
-                update_wanted_to_list(username,choose)
-                code = check_want(username,choose)
-                
-                send_text(conn,code,id)
-                ip_of_choosen = return_someone(choose)
-                send_text(conn,ip_of_choosen,id)
+    connection_client_client(conn,id,username)
 
-                if recv_text(conn,id) == "008":
-                    print("Thread",id,": finished")
-                    update_need_to_change(username)
-                    remove_from_db(username)
-                    return
 
 def main():
     """Première fonction executée"""

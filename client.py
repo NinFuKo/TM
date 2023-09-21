@@ -231,7 +231,9 @@ def choose_your_friend(conn,username):
                             
                             send_text(conn,wanted)
                             code = recv_text(conn)
-                            if code == "006":
+                            if code == "011":
+                                choose_your_friend(conn,username)
+                            elif code == "006":
                                 _, port = conn.getsockname()
 
                                 time.sleep(3)    
