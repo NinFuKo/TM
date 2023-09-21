@@ -1,18 +1,19 @@
 import socket # module qui permet d'ouvrir ou de se connecter sur un adresse ip
 import time # permet de mettre en pause le programme
 import threading # module pour executer plusieurs fonctions en même temps
-from os import system, name 
+
 
 
 finish = False
 
 def clear_terminal(): #_à_citer_la_source
     """Rafraîchit le terminal de l'utilisateur (... -> ...)"""
+    from os import system, name
     # pour windows
     if name == 'nt':
         _ = system('cls')
  
-    # pour mac et linux
+    # pour mac (et linux)
     else:
         _ = system('clear')
 
@@ -153,7 +154,13 @@ def main_second_part_normal(conn,username,wanted):
     send_thread.join()
 
             
-
+def name_on_title(username):
+    """Permet d'afficher le nom de l'utilisateur dans le titre du terminal (string -> ...)"""
+    import os
+    from os import name
+    command = "title " + username
+    if name == "nt":
+        os.system(command) # ne fonctionne que sur windows
 
     
         
@@ -172,6 +179,7 @@ def main():
             if code == "001":
                 clear_terminal()
                 print("Valid Username")
+                name_on_title(username)
                 break
         
         
