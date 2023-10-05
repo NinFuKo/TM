@@ -6,7 +6,7 @@ import threading # module pour executer plusieurs fonctions en même temps
 
 finish = False
 
-def clear_terminal(): #_à_citer_la_source
+def clear_terminal(): # bout de code repris (source :https://www.geeksforgeeks.org/clear-screen-python/)
     """Rafraîchit le terminal de l'utilisateur (... -> ...)"""
     from os import system, name
     # pour windows
@@ -149,7 +149,7 @@ def main_second_part_normal(conn,username,wanted):
     send_thread.join()
 
             
-def name_on_title(username):
+def name_on_title(username): # Bout de code repris (source : https://stackoverflow.com/questions/7387276/set-windows-command-line-terminal-title-in-python)
     """Permet d'afficher le nom de l'utilisateur dans le titre du terminal (string -> ...)"""
     import os
     from os import name
