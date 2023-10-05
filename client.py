@@ -97,11 +97,6 @@ def write_message(conn):
         text = input("")
         send_text(conn,text)
 
-def notification(conn):
-    while True:
-        if recv_text(conn) == "010":
-            print("yaaassss")
-
 def main_second_part_host(conn,port,username,wanted):
     """Prend la connexion, le port utilisé précédemment, notre nom et celui du destinataire, et s'occupe d'ouvrir un port comme serveur et de communiquer (socket, integer, string, string -> ...)""" 
     other_client = recv_text(conn)

@@ -17,7 +17,7 @@ sending = []
 number_of_client_added = 0
 
 db = TinyDB('db.json') # initialisation de la base de données
-User = Query()
+User = Query() 
 
 
 def send_text(conn,text,id):
@@ -33,7 +33,7 @@ def send_text(conn,text,id):
 def recv_text(conn,id):
     """Prend la connexion et l'id du thread, retourne le texte reçu (socket, integer -> string)""" 
     while True: 
-        text = conn.recv(1024) 
+        text = conn.recv(1024)
         text = text.decode("utf-8") 
         if not text:
             return
@@ -162,9 +162,11 @@ def return_someone(user):
 
             
 def update_wanted_to_list(user,wanted):
+    """Met à jour dans la base de données la personne voulue d'un utilisateur (string, string -> ...)"""
     db.update({"wanted":wanted}, User.username == user)
 
 def update_need_to_change_true(username,wanted):
+    """Change le statut need_to_change des utilisateurs qui veulent parler avec quelqu'un qui est parti. Le statut passe à VRAI, bloque l'utilisateur concerné et le renvoie au choix de correspondant (string, string -> ...)"""
     global User
     condition_1 = User.wanted == username
     condition_2 = User.username != wanted
@@ -172,19 +174,21 @@ def update_need_to_change_true(username,wanted):
     
 
 def update_need_to_change_false(username):
+    """Remet le statut need_to_change à FAUX (comme d'origine) (string -> ...)"""
     global User
     condition_1 = User.username == username
     db.update({"need_to_change": False}, condition_1)
 
 def reset_wanted(user):
+    """Remet à zéro la personne voulue d'un certain utilisateur (string -> ...)"""
     db.update({"wanted":""},User.username == user)
 
 def check_want(user,choose):
+    """Vérifie si le client est choisi (string, string -> ...)"""
     while True:
         time.sleep(0.01 * randint(1,150)) # Cela permet d'avoir les threads qui n'interagissent pas avec la base de données en même temps et qui donc ne créent pas de problème
         user_infos = db.search(User.username == user)
         if user_infos[0]["need_to_change"] == True:
-            print("aiieee")
             update_need_to_change_false(user)
             reset_wanted(user)
 
@@ -209,11 +213,14 @@ def check_want(user,choose):
 
             
 def remove_from_db(username):
+    """Retire un utilisateur de la base de données (string -> ...)"""
     db.remove(User.username == username)
     print("L'utilisateur :", username, "n'est plus dans la base de données")
 
 
 def connection_client_client(conn,id,username):
+    """Connecte les deux clients (socket, integer, string -> ...)"""
+
     list_of_ready = persons_ready(username)
     send_text(conn,list_of_ready,id)
     choose = recv_text(conn,id)
@@ -278,34 +285,3 @@ def main():
 #####
 main()
 
-
-# username pas plus grand que 15 caractère (ajouter une limite) + interdire certain caratère (ex -)
-
-"""sending.append(username)
-                sending.append(person_choosen)
-                sending.append(id)
-                print(sending)
-                while True:
-                    is_server = False
-                    ready_to_chat = False
-                    for i in range(0, len(sending), 3):
-                        if sending[i+1] == username and sending[i] == person_choosen:
-                            ready_to_chat = True
-                            if sending[i+2] > id:
-                                is_server = True
-                            break
-                    if ready_to_chat and is_server:
-                        send_text(conn, "006", id)
-                        break
-                    elif ready_to_chat:
-                        send_text(conn,"007",id)
-                        break
-                    else:
-                        time.sleep(1)
-
-                time.sleep(1)
-                ip_of_choosen = return_someone(person_choosen)
-                send_text(conn,ip_of_choosen,id)
-                if recv_text(conn,id) == "008":
-                    print("Thread",id,": finished")
-                    return"""
